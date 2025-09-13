@@ -25,17 +25,25 @@ class UpdateServerRequest extends FormRequest
      */
     public function rules(): array
     {
-        $serverId = $this->route('server')->id; // grabs the ID from route binding
+        $serverId = $this->route('server')->id;
 
         return [
-            'name'        => [
+            'name' => [
                 'sometimes',
                 'string',
                 'max:255',
-                Rule::unique('servers')->ignore($serverId)->where('provider', $this->provider ?? $this->route('server')->provider)
+                Rule::unique('servers')
+                    ->ignore($serverId, 'id')
+                    ->where(function($query) {
+                        $query->where('provider', $this->provider ?? $this->route('server')->provider);
+                    })
             ],
             'provider'    => ['sometimes', 'in:aws,digitalocean,vultr,other'],
-            'ip_address'  => ['sometimes', 'ipv4', Rule::unique('servers')->ignore($serverId)],
+            'ip_address' => [
+                'sometimes',
+                'ipv4',
+                Rule::unique('servers')->ignore($serverId, 'id')
+            ],
             'status'      => ['sometimes', 'in:active,inactive,maintenance'],
             'cpu_cores'   => ['sometimes', 'integer', 'min:1', 'max:128'],
             'ram_mb'      => ['sometimes', 'integer', 'min:512', 'max:1048576'],

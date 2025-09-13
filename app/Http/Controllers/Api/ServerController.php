@@ -77,17 +77,20 @@ class ServerController extends Controller
     {
         try {
             $data = $request->validated();
-            $expectedVersion = $request->input('version');
 
             $updated = DB::table('servers')
                 ->where('id', $server->id)
-                ->where('version', $expectedVersion)
+                ->where('version', $server->version)
                 ->update(array_merge(
                     $data,
-                    ['version' => $expectedVersion + 1, 'updated_at' => now()]
+                    [
+                        'version' => $server->version + 1,
+                        'updated_at' => now(),
+                    ]
                 ));
 
             if (!$updated) {
+                // Conflict: another process already updated this record
                 return response()->json([
                     'error' => 'Conflict',
                     'message' => 'Version mismatch. Resource was updated by another process.',
@@ -95,7 +98,7 @@ class ServerController extends Controller
                 ], 409);
             }
 
-            return Server::find($server->id);
+            return response()->json(Server::find($server->id));
         } catch (\Exception $exception) {
             return response()->json([
                 'message' => 'Failed to update server',
